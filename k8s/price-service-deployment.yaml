@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: price-service
+  namespace: dhl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: price-service
+  template:
+    metadata:
+      labels:
+        app: price-service
+    spec:
+      containers:
+        - name: price-service
+          image: docker.io/dataquaintacademy/dhl-price-service:latest
+          ports:
+            - containerPort: 5002
+          env:
+            - name: PORT
+              value: "5002"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: price-service
+  namespace: dhl
+spec:
+  selector:
+    app: price-service
+  ports:
+    - port: 5002
+      targetPort: 5002
+  type: ClusterIP

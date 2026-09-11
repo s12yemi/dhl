@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: dhl
+resources:
+  - namespace.yaml
+  - secrets.yaml
+  - mongodb-deployment.yaml
+  - backend-deployment.yaml
+  - banking-service-deployment.yaml
+  - language-service-deployment.yaml
+  - price-service-deployment.yaml
+  - air-cargo-service-deployment.yaml
+  - sea-cargo-service-deployment.yaml
+  - frontend-deployment.yaml
+commonLabels:
+  app: dhl

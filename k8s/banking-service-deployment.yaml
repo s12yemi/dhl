@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: banking-service
+  namespace: dhl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: banking-service
+  template:
+    metadata:
+      labels:
+        app: banking-service
+    spec:
+      containers:
+        - name: banking-service
+          image: docker.io/dataquaintacademy/dhl-banking-service:latest
+          ports:
+            - containerPort: 5005
+          env:
+            - name: PORT
+              value: "5005"
+            - name: MONGO_URI
+              value: "mongodb://mongodb:27017/dhl-bank"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: banking-service
+  namespace: dhl
+spec:
+  selector:
+    app: banking-service
+  ports:
+    - port: 5005
+      targetPort: 5005
+  type: ClusterIP

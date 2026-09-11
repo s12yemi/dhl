@@ -1,0 +1,108 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: dhl-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - dhl-network
+
+  backend:
+    build: ./backend
+    container_name: dhl-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - MONGO_URI=mongodb://mongodb:27017/dhl-clone
+      - JWT_SECRET=dhl_clone_secret_key_12345
+      - PRICE_SERVICE_URL=http://price-service:5002
+      - AIR_CARGO_SERVICE_URL=http://air-cargo-service:5003
+      - SEA_CARGO_SERVICE_URL=http://sea-cargo-service:5004
+      - BANK_SERVICE_URL=http://banking-service:5005
+    depends_on:
+      - mongodb
+      - price-service
+      - air-cargo-service
+      - sea-cargo-service
+      - banking-service
+    networks:
+      - dhl-network
+
+  banking-service:
+    build: ./banking-service
+    container_name: dhl-banking-service
+    ports:
+      - "5005:5005"
+    environment:
+      - PORT=5005
+      - MONGO_URI=mongodb://mongodb:27017/dhl-bank
+    depends_on:
+      - mongodb
+    networks:
+      - dhl-network
+
+  language-service:
+    build: ./language-service
+    container_name: dhl-language-service
+    ports:
+      - "5001:5001"
+    environment:
+      - PORT=5001
+    networks:
+      - dhl-network
+
+  price-service:
+    build: ./price-service
+    container_name: dhl-price-service
+    ports:
+      - "5002:5002"
+    environment:
+      - PORT=5002
+    networks:
+      - dhl-network
+
+  air-cargo-service:
+    build: ./air-cargo-service
+    container_name: dhl-air-cargo-service
+    ports:
+      - "5003:5003"
+    environment:
+      - PORT=5003
+    networks:
+      - dhl-network
+
+  sea-cargo-service:
+    build: ./sea-cargo-service
+    container_name: dhl-sea-cargo-service
+    ports:
+      - "5004:5004"
+    environment:
+      - PORT=5004
+    networks:
+      - dhl-network
+
+  frontend:
+    build: ./frontend
+    container_name: dhl-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+      - language-service
+      - price-service
+      - air-cargo-service
+      - sea-cargo-service
+    networks:
+      - dhl-network
+
+volumes:
+  mongo-data:
+
+networks:
+  dhl-network:
+    driver: bridge

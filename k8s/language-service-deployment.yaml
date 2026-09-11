@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: language-service
+  namespace: dhl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: language-service
+  template:
+    metadata:
+      labels:
+        app: language-service
+    spec:
+      containers:
+        - name: language-service
+          image: docker.io/dataquaintacademy/dhl-language-service:latest
+          ports:
+            - containerPort: 5001
+          env:
+            - name: PORT
+              value: "5001"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: language-service
+  namespace: dhl
+spec:
+  selector:
+    app: language-service
+  ports:
+    - port: 5001
+      targetPort: 5001
+  type: ClusterIP

@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sea-cargo-service
+  namespace: dhl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sea-cargo-service
+  template:
+    metadata:
+      labels:
+        app: sea-cargo-service
+    spec:
+      containers:
+        - name: sea-cargo-service
+          image: docker.io/dataquaintacademy/dhl-sea-cargo-service:latest
+          ports:
+            - containerPort: 5004
+          env:
+            - name: PORT
+              value: "5004"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sea-cargo-service
+  namespace: dhl
+spec:
+  selector:
+    app: sea-cargo-service
+  ports:
+    - port: 5004
+      targetPort: 5004
+  type: ClusterIP

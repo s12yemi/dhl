@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: dhl
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: docker.io/dataquaintacademy/dhl-backend:latest
+          ports:
+            - containerPort: 5000
+          env:
+            - name: PORT
+              value: "5000"
+            - name: MONGO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: dhl-secrets
+                  key: MONGO_URI
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: dhl-secrets
+                  key: JWT_SECRET
+            - name: PRICE_SERVICE_URL
+              value: "http://price-service:5002"
+            - name: AIR_CARGO_SERVICE_URL
+              value: "http://air-cargo-service:5003"
+            - name: SEA_CARGO_SERVICE_URL
+              value: "http://sea-cargo-service:5004"
+            - name: BANK_SERVICE_URL
+              value: "http://banking-service:5005"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: dhl
+spec:
+  selector:
+    app: backend
+  ports:
+    - port: 5000
+      targetPort: 5000
+  type: ClusterIP
