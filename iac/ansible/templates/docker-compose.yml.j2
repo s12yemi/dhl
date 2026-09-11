@@ -1,0 +1,70 @@
+---
+name: cicd
+
+services:
+  jenkins:
+    image: "{{ jenkins_image }}"
+    container_name: jenkins
+    restart: unless-stopped
+    user: root
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  sonarqube:
+    image: "{{ sonarqube_image }}"
+    container_name: sonarqube
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+    environment:
+      SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: "true"
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+
+  mattermost-db:
+    image: "{{ postgres_image }}"
+    container_name: mattermost-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: mattermost
+      POSTGRES_USER: mattermost
+      POSTGRES_PASSWORD: "{{ mattermost_db_password }}"
+    volumes:
+      - mattermost_db:/var/lib/postgresql/data
+
+  mattermost:
+    image: "{{ mattermost_image }}"
+    container_name: mattermost
+    restart: unless-stopped
+    depends_on:
+      - mattermost-db
+    ports:
+      - "8065:8065"
+    environment:
+      MM_SERVICESETTINGS_SITEURL: "{{ mattermost_site_url }}"
+      MM_SQLSETTINGS_DRIVERNAME: postgres
+      MM_SQLSETTINGS_DATASOURCE: "postgres://mattermost:{{ mattermost_db_password }}@mattermost-db:5432/mattermost?sslmode=disable&connect_timeout=10"
+    volumes:
+      - mattermost_config:/mattermost/config
+      - mattermost_data:/mattermost/data
+      - mattermost_logs:/mattermost/logs
+      - mattermost_plugins:/mattermost/plugins
+      - mattermost_client_plugins:/mattermost/client/plugins
+
+volumes:
+  jenkins_home:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:
+  mattermost_db:
+  mattermost_config:
+  mattermost_data:
+  mattermost_logs:
+  mattermost_plugins:
+  mattermost_client_plugins:

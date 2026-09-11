@@ -1,0 +1,31 @@
+aws_region   = "ca-central-1"
+cluster_name = "yemi-cluster"
+environment  = "dev"
+
+vpc_cidr = "10.60.0.0/16"
+az_count = 2
+
+# For safer API access, replace with your public IP in CIDR form.
+cluster_public_access_cidrs = ["0.0.0.0/0"]
+cluster_log_retention_days  = 30
+
+node_instance_types = ["t3.medium"]
+node_ami_type       = "AL2023_x86_64_STANDARD"
+node_desired_size   = 2
+node_min_size       = 1
+node_max_size       = 4
+node_disk_size      = 40
+
+ecr_repository_names = [
+  "dhl-backend",
+  "dhl-banking-service",
+  "dhl-language-service",
+  "dhl-price-service",
+  "dhl-air-cargo-service",
+  "dhl-sea-cargo-service",
+  "dhl-frontend"
+]
+
+# Optional: wire Jenkins access into the platform stack.
+# jenkins_deployer_role_name     = "jenkins-deployer-role"
+# jenkins_deployer_principal_arn = "arn:aws:iam::123456789012:role/jenkins-deployer-role"

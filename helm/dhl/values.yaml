@@ -1,0 +1,106 @@
+global:
+  imageRegistry: ""
+  imageTag: latest
+  imagePullPolicy: IfNotPresent
+
+secrets:
+  name: dhl-secrets
+  jwtSecret: dhl_clone_secret_key_12345
+  mongoUri: mongodb://mongodb:27017/dhl-clone
+
+mongodb:
+  enabled: true
+  image:
+    repository: mongo
+    tag: "6.0"
+    pullPolicy: IfNotPresent
+  service:
+    port: 27017
+
+services:
+  backend:
+    replicas: 2
+    image:
+      repository: dhl-backend
+    containerPort: 5000
+    service:
+      port: 5000
+      type: ClusterIP
+    env:
+      PORT: "5000"
+      PRICE_SERVICE_URL: http://price-service:5002
+      AIR_CARGO_SERVICE_URL: http://air-cargo-service:5003
+      SEA_CARGO_SERVICE_URL: http://sea-cargo-service:5004
+      BANK_SERVICE_URL: http://banking-service:5005
+    secretEnv:
+      MONGO_URI:
+        name: dhl-secrets
+        key: MONGO_URI
+      JWT_SECRET:
+        name: dhl-secrets
+        key: JWT_SECRET
+
+  banking-service:
+    replicas: 1
+    image:
+      repository: dhl-banking-service
+    containerPort: 5005
+    service:
+      port: 5005
+      type: ClusterIP
+    env:
+      PORT: "5005"
+      MONGO_URI: mongodb://mongodb:27017/dhl-bank
+
+  language-service:
+    replicas: 1
+    image:
+      repository: dhl-language-service
+    containerPort: 5001
+    service:
+      port: 5001
+      type: ClusterIP
+    env:
+      PORT: "5001"
+
+  price-service:
+    replicas: 1
+    image:
+      repository: dhl-price-service
+    containerPort: 5002
+    service:
+      port: 5002
+      type: ClusterIP
+    env:
+      PORT: "5002"
+
+  air-cargo-service:
+    replicas: 1
+    image:
+      repository: dhl-air-cargo-service
+    containerPort: 5003
+    service:
+      port: 5003
+      type: ClusterIP
+    env:
+      PORT: "5003"
+
+  sea-cargo-service:
+    replicas: 1
+    image:
+      repository: dhl-sea-cargo-service
+    containerPort: 5004
+    service:
+      port: 5004
+      type: ClusterIP
+    env:
+      PORT: "5004"
+
+  frontend:
+    replicas: 2
+    image:
+      repository: dhl-frontend
+    containerPort: 3000
+    service:
+      port: 80
+      type: LoadBalancer

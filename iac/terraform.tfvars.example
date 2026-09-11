@@ -1,0 +1,20 @@
+# Copy this file to terraform.tfvars and adjust values for your AWS account.
+
+aws_region       = "ca-central-1"
+instance_name    = "cicd-ubuntu-t3-medium"
+instance_type    = "t3.medium"
+key_name         = "my-MAC-key-pair"
+private_key_path = "~/Downloads/my-MAC-key-pair.pem"
+
+# Use your own IP range for safer access, for example ["203.0.113.10/32"].
+allowed_cidr_blocks = ["0.0.0.0/0"]
+
+# Uncomment these if you want to reuse the IDs from the old AWS CLI script.
+# subnet_id          = "subnet-0a6c18ca2c979bfa1"
+# security_group_ids = ["sg-044775dbf88c6083e"]
+
+# Leave ami_id null to use the latest Ubuntu 24.04 LTS AMI in aws_region.
+# ami_id = "ami-085f043560da76e08"
+
+# Change before applying.
+mattermost_db_password = "replace-with-a-strong-password"

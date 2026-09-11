@@ -1,0 +1,60 @@
+{{- range $name, $service := .Values.services }}
+{{- $tag := default $.Values.global.imageTag $service.image.tag }}
+{{- $pullPolicy := default $.Values.global.imagePullPolicy $service.image.pullPolicy }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "dhl.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $name }}
+spec:
+  replicas: {{ $service.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ $.Release.Name }}
+      app.kubernetes.io/component: {{ $name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: {{ $.Release.Name }}
+        app.kubernetes.io/component: {{ $name }}
+    spec:
+      containers:
+        - name: {{ $name }}
+          image: "{{ include "dhl.image" (dict "registry" $.Values.global.imageRegistry "repository" $service.image.repository "tag" $tag) }}"
+          imagePullPolicy: {{ $pullPolicy }}
+          ports:
+            - containerPort: {{ $service.containerPort }}
+          {{- if or $service.env $service.secretEnv }}
+          env:
+            {{- range $key, $value := $service.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- range $key, $ref := $service.secretEnv }}
+            - name: {{ $key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $ref.name }}
+                  key: {{ $ref.key }}
+            {{- end }}
+          {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "dhl.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $name }}
+spec:
+  selector:
+    app.kubernetes.io/instance: {{ $.Release.Name }}
+    app.kubernetes.io/component: {{ $name }}
+  ports:
+    - port: {{ $service.service.port }}
+      targetPort: {{ $service.containerPort }}
+  type: {{ $service.service.type }}
+{{- end }}

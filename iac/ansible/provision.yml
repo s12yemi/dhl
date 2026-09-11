@@ -1,0 +1,147 @@
+---
+- name: Provision Docker, Jenkins, SonarQube, and Mattermost
+  hosts: all
+  become: true
+  gather_facts: false
+
+  vars:
+    cicd_compose_dir: /opt/cicd
+    docker_users:
+      - ubuntu
+    privileged_users:
+      - ubuntu
+    jenkins_image: jenkins/jenkins:lts-jdk17
+    sonarqube_image: sonarqube:community
+    mattermost_image: mattermost/mattermost-team-edition:latest
+    mattermost_site_url: http://localhost:8065
+    postgres_image: postgres:16-alpine
+    mattermost_db_password: yemi-password
+
+  pre_tasks:
+    - name: Wait for SSH to become available
+      ansible.builtin.wait_for_connection:
+        timeout: 300
+
+    - name: Gather host facts
+      ansible.builtin.setup:
+
+  tasks:
+    - name: Upgrade installed Ubuntu packages
+      ansible.builtin.apt:
+        update_cache: true
+        upgrade: dist
+        cache_valid_time: 3600
+
+    - name: Install base packages
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+          - git
+          - gnupg
+          - maven
+          - python3
+          - python3-apt
+        state: present
+
+    - name: Create apt keyring directory
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Install Docker apt repository key
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Add Docker apt repository
+      ansible.builtin.apt_repository:
+        repo: "deb [arch={{ docker_apt_arch }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        filename: docker
+        state: present
+        update_cache: true
+      vars:
+        docker_apt_arch: "{{ 'arm64' if ansible_architecture in ['aarch64', 'arm64'] else 'amd64' }}"
+
+    - name: Install Docker Engine and Compose plugin
+      ansible.builtin.apt:
+        name:
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-ce
+          - docker-ce-cli
+          - docker-compose-plugin
+        state: present
+
+    - name: Enable and start Docker
+      ansible.builtin.service:
+        name: docker
+        enabled: true
+        state: started
+
+    - name: Add users to docker group
+      ansible.builtin.user:
+        name: "{{ item }}"
+        groups: docker
+        append: true
+      loop: "{{ docker_users }}"
+
+    - name: Grant passwordless sudo to privileged users
+      ansible.builtin.copy:
+        dest: "/etc/sudoers.d/90-{{ item }}"
+        content: "{{ item }} ALL=(ALL) NOPASSWD:ALL\n"
+        owner: root
+        group: root
+        mode: "0440"
+        validate: "visudo -cf %s"
+      loop: "{{ privileged_users }}"
+
+    - name: Set SonarQube vm.max_map_count
+      ansible.posix.sysctl:
+        name: vm.max_map_count
+        value: "524288"
+        state: present
+        reload: true
+        sysctl_file: /etc/sysctl.d/99-sonarqube.conf
+
+    - name: Set SonarQube file descriptor limit
+      ansible.posix.sysctl:
+        name: fs.file-max
+        value: "131072"
+        state: present
+        reload: true
+        sysctl_file: /etc/sysctl.d/99-sonarqube.conf
+
+    - name: Create CI/CD compose directory
+      ansible.builtin.file:
+        path: "{{ cicd_compose_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Install CI/CD compose file
+      ansible.builtin.template:
+        src: docker-compose.yml.j2
+        dest: "{{ cicd_compose_dir }}/docker-compose.yml"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Pull CI/CD container images
+      ansible.builtin.command:
+        cmd: docker compose -f {{ cicd_compose_dir }}/docker-compose.yml pull
+      register: docker_compose_pull
+      changed_when: "'Downloaded newer image' in docker_compose_pull.stdout or 'Pulling' in docker_compose_pull.stdout"
+
+    - name: Start CI/CD containers
+      ansible.builtin.command:
+        cmd: docker compose -f {{ cicd_compose_dir }}/docker-compose.yml up -d
+      register: docker_compose_up
+      changed_when: "'Started' in docker_compose_up.stdout or 'Created' in docker_compose_up.stdout or 'Recreated' in docker_compose_up.stdout"
