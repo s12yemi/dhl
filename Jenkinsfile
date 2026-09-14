@@ -34,7 +34,7 @@ pipeline {
             }
         }
 
-        stage('Login to AWS ECR') {
+        stage('Login & Prepare AWS ECR') {
             steps {
                 script {
                     withAWS(credentials: "${env.AWS_CREDENTIALS_ID}", region: "${env.AWS_REGION}") {
@@ -61,9 +61,31 @@ pipeline {
 
                         services.each { service ->
                             sh """
-                                aws ecr describe-repositories \
+                                if result=\$(aws ecr describe-repositories \
                                     --repository-names ${env.ECR_REPOSITORY_PREFIX}-${service} \
-                                    --region ${env.AWS_REGION} >/dev/null
+                                    --region ${env.AWS_REGION} 2>&1); then
+                                    echo 'ECR repository ${env.ECR_REPOSITORY_PREFIX}-${service} already exists'
+                                else
+                                    case "\$result" in
+                                        *RepositoryNotFoundException*)
+                                            echo 'Creating ECR repository ${env.ECR_REPOSITORY_PREFIX}-${service}'
+                                            if result=\$(aws ecr create-repository \
+                                                --repository-name ${env.ECR_REPOSITORY_PREFIX}-${service} \
+                                                --region ${env.AWS_REGION} \
+                                                --image-tag-mutability MUTABLE \
+                                                --image-scanning-configuration scanOnPush=true \
+                                                --encryption-configuration encryptionType=AES256 2>&1); then
+                                                echo 'ECR repository created'
+                                            else
+                                                case "\$result" in
+                                                    *RepositoryAlreadyExistsException*) echo 'ECR repository created by another build' ;;
+                                                    *) printf '%s\\n' "\$result" >&2; exit 1 ;;
+                                                esac
+                                            fi
+                                            ;;
+                                        *) printf '%s\\n' "\$result" >&2; exit 1 ;;
+                                    esac
+                                fi
                             """
                         }
                     }
