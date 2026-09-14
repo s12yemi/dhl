@@ -1,10 +1,6 @@
 pipeline {
     agent any
 
-    tools {
-        nodejs 'node20'
-    }
-
     environment {
         SONARQUBE_SERVER_ENV  = 'sonarqubeserver'
         AWS_CREDENTIALS_ID    = 'aws-creds'
