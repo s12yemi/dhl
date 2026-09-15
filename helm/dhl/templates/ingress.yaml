@@ -1,0 +1,68 @@
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  name: alb
+spec:
+  controller: eks.amazonaws.com/alb
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: dhl-ingress
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+spec:
+  ingressClassName: alb
+  rules:
+    - http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: backend
+                port:
+                  number: 5000
+
+          - path: /language-api
+            pathType: Prefix
+            backend:
+              service:
+                name: language-service
+                port:
+                  number: 5001
+
+          - path: /air-api
+            pathType: Prefix
+            backend:
+              service:
+                name: air-cargo-service
+                port:
+                  number: 5003
+
+          - path: /sea-api
+            pathType: Prefix
+            backend:
+              service:
+                name: sea-cargo-service
+                port:
+                  number: 5004
+
+          - path: /bank-api
+            pathType: Prefix
+            backend:
+              service:
+                name: banking-service
+                port:
+                  number: 5005
+
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80

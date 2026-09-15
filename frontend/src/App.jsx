@@ -9,11 +9,11 @@ import {
 import SupportChat from './components/SupportChat';
 import MapTracker from './components/MapTracker';
 
-const API_BASE = 'http://localhost:5000/api';
-const LANG_API = 'http://localhost:5001/api';
-const AIR_API = 'http://localhost:5003/api';
-const SEA_API = 'http://localhost:5004/api';
-const BANK_API = 'http://localhost:5005/api';
+const API_BASE = '/api';
+const LANG_API = '/language-api';
+const AIR_API = '/air-api';
+const SEA_API = '/sea-api';
+const BANK_API = '/bank-api';
 
 const defaultTranslations = {
   heroTitle: "Global Logistics. Delivered Faster.",
