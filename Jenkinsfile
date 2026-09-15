@@ -147,7 +147,17 @@ pipeline {
             steps {
                 script {
                     withAWS(credentials: "${env.AWS_CREDENTIALS_ID}", region: "${env.AWS_REGION}") {
-                        sh "aws eks update-kubeconfig --name ${env.EKS_CLUSTER_NAME} --region ${env.AWS_REGION}"
+                        sh '''
+                            echo "=== PIPELINE AWS IDENTITY ==="
+                            AWS_PAGER="" aws sts get-caller-identity
+
+                            echo "=== UPDATE KUBECONFIG ==="
+
+                            aws eks update-kubeconfig --name ${env.EKS_CLUSTER_NAME} --region ${env.AWS_REGION}
+
+                            echo "=== TEST KUBERNETES AUTH ==="
+                            kubectl get nodes
+                        '''
 
                         sh """
                             helm upgrade --install ${env.HELM_RELEASE} ${env.HELM_CHART} \
