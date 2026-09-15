@@ -130,8 +130,8 @@ pipeline {
                     def builds = services.collectEntries { service, config ->
                         ["Build ${service}": {
                             def image = "${env.ECR_REGISTRY}/${env.ECR_REPOSITORY_PREFIX}-${service}"
-
-                            sh "docker build -t ${image}:${env.IMAGE_TAG} -f ${config.dockerfile} ./${config.context}"
+                            
+                            sh "docker buildx build --platform linux/amd64 -t ${image}:${env.IMAGE_TAG} -f ${config.dockerfile} ./${config.context}"
                             sh "docker tag ${image}:${env.IMAGE_TAG} ${image}:latest"
                             sh "docker push ${image}:${env.IMAGE_TAG}"
                             sh "docker push ${image}:latest"
