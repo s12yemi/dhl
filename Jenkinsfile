@@ -153,7 +153,7 @@ pipeline {
 
                             echo "=== UPDATE KUBECONFIG ==="
 
-                            aws eks update-kubeconfig --name ${env.EKS_CLUSTER_NAME} --region ${env.AWS_REGION}
+                            aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --region $AWS_REGION
 
                             echo "=== TEST KUBERNETES AUTH ==="
                             kubectl get nodes
